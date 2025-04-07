@@ -27,6 +27,31 @@ RSpec.describe OnSystem do
     end
   end
 
+  describe "UsesOnSystem" do
+    uses_on_system_empty = described_class::UsesOnSystem.new
+    uses_on_system_present = described_class::UsesOnSystem.new(arm: true)
+
+    describe "#empty?" do
+      it "returns true if all properties are default values" do
+        expect(uses_on_system_empty.empty?).to be true
+      end
+
+      it "returns false if any properties have a non-default value" do
+        expect(uses_on_system_present.empty?).to be false
+      end
+    end
+
+    describe "#present?" do
+      it "returns true if object is not empty" do
+        expect(uses_on_system_present.present?).to be true
+      end
+
+      it "returns false if object is empty" do
+        expect(uses_on_system_empty.present?).to be false
+      end
+    end
+  end
+
   describe "::arch_condition_met?" do
     it "returns true if current arch equals provided arch" do
       Homebrew::SimulateSystem.with(arch: :arm) do

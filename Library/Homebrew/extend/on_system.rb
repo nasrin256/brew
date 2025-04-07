@@ -22,6 +22,28 @@ module OnSystem
     T::Array[Utils::Bottles::Tag],
   )
 
+  class UsesOnSystem < T::Struct
+    prop :arm, T::Boolean, default: false
+    prop :intel, T::Boolean, default: false
+    prop :linux, T::Boolean, default: false
+    prop :macos, T::Boolean, default: false
+
+    alias arm? arm
+    alias intel? intel
+    alias linux? linux
+    alias macos? macos
+
+    # Whether the object has only default values.
+    sig { returns(T::Boolean) }
+    def empty?
+      !@arm && !@intel && !@linux && !@macos
+    end
+
+    # Whether the object has any non-default values.
+    sig { returns(T::Boolean) }
+    def present? = !empty?
+  end
+
   sig { params(arch: Symbol).returns(T::Boolean) }
   def self.arch_condition_met?(arch)
     raise ArgumentError, "Invalid arch condition: #{arch.inspect}" if ARCH_OPTIONS.exclude?(arch)
@@ -65,7 +87,8 @@ module OnSystem
   def self.setup_arch_methods(base)
     ARCH_OPTIONS.each do |arch|
       base.define_method(:"on_#{arch}") do |&block|
-        @on_system_blocks_exist = T.let(true, T.nilable(T::Boolean))
+        @uses_on_system ||= T.let(OnSystem::UsesOnSystem.new, T.nilable(OnSystem::UsesOnSystem))
+        @uses_on_system.send(:"#{arch}=", true)
 
         return unless OnSystem.arch_condition_met? OnSystem.condition_from_method_name(T.must(__method__))
 
@@ -78,7 +101,9 @@ module OnSystem
     end
 
     base.define_method(:on_arch_conditional) do |arm: nil, intel: nil|
-      @on_system_blocks_exist = true
+      @uses_on_system ||= T.let(OnSystem::UsesOnSystem.new, T.nilable(OnSystem::UsesOnSystem))
+      @uses_on_system.arm = true if arm
+      @uses_on_system.intel = true if intel
 
       if OnSystem.arch_condition_met? :arm
         arm
@@ -92,7 +117,8 @@ module OnSystem
   def self.setup_base_os_methods(base)
     BASE_OS_OPTIONS.each do |base_os|
       base.define_method(:"on_#{base_os}") do |&block|
-        @on_system_blocks_exist = true
+        @uses_on_system ||= T.let(OnSystem::UsesOnSystem.new, T.nilable(OnSystem::UsesOnSystem))
+        @uses_on_system.send(:"#{base_os}=", true)
 
         return unless OnSystem.os_condition_met? OnSystem.condition_from_method_name(T.must(__method__))
 
@@ -105,7 +131,9 @@ module OnSystem
     end
 
     base.define_method(:on_system) do |linux, macos:, &block|
-      @on_system_blocks_exist = true
+      @uses_on_system ||= T.let(OnSystem::UsesOnSystem.new, T.nilable(OnSystem::UsesOnSystem))
+      @uses_on_system.linux = true
+      @uses_on_system.macos = true
 
       raise ArgumentError, "The first argument to `on_system` must be `:linux`" if linux != :linux
 
@@ -124,7 +152,9 @@ module OnSystem
     end
 
     base.define_method(:on_system_conditional) do |macos: nil, linux: nil|
-      @on_system_blocks_exist = true
+      @uses_on_system ||= T.let(OnSystem::UsesOnSystem.new, T.nilable(OnSystem::UsesOnSystem))
+      @uses_on_system.macos = true if macos
+      @uses_on_system.linux = true if linux
 
       if OnSystem.os_condition_met?(:macos) && macos.present?
         macos
@@ -138,7 +168,8 @@ module OnSystem
   def self.setup_macos_methods(base)
     MacOSVersion::SYMBOLS.each_key do |os_name|
       base.define_method(:"on_#{os_name}") do |or_condition = nil, &block|
-        @on_system_blocks_exist = true
+        @uses_on_system ||= T.let(OnSystem::UsesOnSystem.new, T.nilable(OnSystem::UsesOnSystem))
+        @uses_on_system.macos = true
 
         os_condition = OnSystem.condition_from_method_name T.must(__method__)
         return unless OnSystem.os_condition_met? os_condition, or_condition
