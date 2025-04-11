@@ -855,6 +855,12 @@ RSpec.describe Cask::DSL, :cask do
       it "sets @uses_on_system.macos to true" do
         expect(cask.uses_on_system.macos?).to be true
       end
+
+      it "sets @uses_on_system.macos_requirements using macos argument" do
+        expect(cask.uses_on_system.macos_requirements).to eq(Set[
+          MacOSRequirement.new([:sequoia], comparator: ">="),
+        ])
+      end
     end
 
     context "when cask uses on_system_conditional" do
@@ -889,6 +895,14 @@ RSpec.describe Cask::DSL, :cask do
 
       it "sets @uses_on_system.macos to true" do
         expect(cask.uses_on_system.macos?).to be true
+      end
+
+      it "sets @uses_on_system.macos_requirements using on_* macos version conditions" do
+        expect(cask.uses_on_system.macos_requirements).to eq(Set[
+          MacOSRequirement.new([:big_sur], comparator: "<="),
+          MacOSRequirement.new([:monterey], comparator: "=="),
+          MacOSRequirement.new([:ventura], comparator: ">="),
+        ])
       end
     end
   end

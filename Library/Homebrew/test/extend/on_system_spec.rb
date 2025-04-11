@@ -52,6 +52,24 @@ RSpec.describe OnSystem do
     end
   end
 
+  describe "::comparator_from_or_condition" do
+    it 'returns ">=" for `:or_newer` symbol' do
+      expect(described_class.comparator_from_or_condition(:or_newer)).to eq(">=")
+    end
+
+    it 'returns "<=" for `:or_older` symbol' do
+      expect(described_class.comparator_from_or_condition(:or_older)).to eq("<=")
+    end
+
+    it 'returns "==" for an unsupported symbol' do
+      expect(described_class.comparator_from_or_condition(:nonexistent)).to eq("==")
+    end
+
+    it 'returns "==" for `nil`' do
+      expect(described_class.comparator_from_or_condition(nil)).to eq("==")
+    end
+  end
+
   describe "::arch_condition_met?" do
     it "returns true if current arch equals provided arch" do
       Homebrew::SimulateSystem.with(arch: :arm) do

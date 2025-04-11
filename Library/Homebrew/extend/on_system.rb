@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "requirements/macos_requirement"
 require "simulate_system"
 
 module OnSystem
@@ -27,6 +28,7 @@ module OnSystem
     prop :intel, T::Boolean, default: false
     prop :linux, T::Boolean, default: false
     prop :macos, T::Boolean, default: false
+    prop :macos_requirements, T::Set[MacOSRequirement], default: Set[]
 
     alias arm? arm
     alias intel? intel
@@ -36,12 +38,26 @@ module OnSystem
     # Whether the object has only default values.
     sig { returns(T::Boolean) }
     def empty?
-      !@arm && !@intel && !@linux && !@macos
+      !@arm && !@intel && !@linux && !@macos && @macos_requirements.empty?
     end
 
     # Whether the object has any non-default values.
     sig { returns(T::Boolean) }
     def present? = !empty?
+  end
+
+  # Converts an `or_condition` value to a suitable `MacOSRequirements`
+  # `comparator` string, defaulting to `==` if the provided argument is `nil`.
+  sig { params(symbol: T.nilable(Symbol)).returns(String) }
+  def self.comparator_from_or_condition(symbol)
+    case symbol
+    when :or_newer
+      ">="
+    when :or_older
+      "<="
+    else
+      "=="
+    end
   end
 
   sig { params(arch: Symbol).returns(T::Boolean) }
@@ -142,6 +158,9 @@ module OnSystem
       else
         [macos.to_sym, nil]
       end
+
+      comparator = OnSystem.comparator_from_or_condition(or_condition)
+      @uses_on_system.macos_requirements << MacOSRequirement.new([os_version], comparator:)
       return if !OnSystem.os_condition_met?(os_version, or_condition) && !OnSystem.os_condition_met?(:linux)
 
       @called_in_on_system_block = true
@@ -172,6 +191,9 @@ module OnSystem
         @uses_on_system.macos = true
 
         os_condition = OnSystem.condition_from_method_name T.must(__method__)
+        comparator = OnSystem.comparator_from_or_condition(or_condition)
+        @uses_on_system.macos_requirements << MacOSRequirement.new([os_condition], comparator:)
+
         return unless OnSystem.os_condition_met? os_condition, or_condition
 
         @on_system_block_min_os = T.let(

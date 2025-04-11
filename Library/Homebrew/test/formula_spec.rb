@@ -2073,6 +2073,12 @@ RSpec.describe Formula do
       it "sets @uses_on_system.macos to true" do
         expect(f_on_system.uses_on_system.macos?).to be true
       end
+
+      it "sets @uses_on_system.macos_requirements using macos argument" do
+        expect(f_on_system.uses_on_system.macos_requirements).to eq(Set[
+          MacOSRequirement.new([:sequoia], comparator: ">="),
+        ])
+      end
     end
 
     context "when formula uses on_system_conditional" do
@@ -2130,6 +2136,14 @@ RSpec.describe Formula do
 
       it "sets @uses_on_system.macos to true" do
         expect(f_on_macos_versions.uses_on_system.macos?).to be true
+      end
+
+      it "sets @uses_on_system.macos_requirements using on_* macos version conditions" do
+        expect(f_on_macos_versions.uses_on_system.macos_requirements).to eq(Set[
+          MacOSRequirement.new([:big_sur], comparator: "<="),
+          MacOSRequirement.new([:monterey], comparator: "=="),
+          MacOSRequirement.new([:ventura], comparator: ">="),
+        ])
       end
     end
   end
