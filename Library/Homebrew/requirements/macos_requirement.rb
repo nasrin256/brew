@@ -88,6 +88,16 @@ class MacOSRequirement < Requirement
     end
   end
 
+  # Finds the highest supported {MacOSVersion} that meets the requirement, if
+  # any.
+  sig { returns(T.nilable(MacOSVersion)) }
+  def highest_allowed
+    MacOSVersion::SYMBOLS.each_key do |sym|
+      candidate_version = MacOSVersion.from_symbol(sym)
+      return candidate_version if allows?(candidate_version)
+    end
+  end
+
   def message(type: :formula)
     return "macOS is required for this software." unless version_specified?
 
