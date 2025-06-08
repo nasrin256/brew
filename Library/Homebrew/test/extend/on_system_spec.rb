@@ -105,6 +105,11 @@ RSpec.describe OnSystem do
       end
     end
 
+    it "returns false if `os_name` is a macOS version but current OS is `:generic`" do
+      allow(Homebrew::SimulateSystem).to receive(:current_os).and_return(:generic)
+      expect(described_class.os_condition_met?(newest_macos)).to be false
+    end
+
     it "returns false if current OS is `:macos` and `os_name` is a macOS version" do
       # A generic macOS version is treated as less than any other version.
       Homebrew::SimulateSystem.with(os: :macos) do

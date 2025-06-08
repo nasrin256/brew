@@ -77,16 +77,17 @@ module OnSystem
       raise ArgumentError, "Invalid OS `or_*` condition: #{or_condition.inspect}"
     end
 
-    return false if Homebrew::SimulateSystem.simulating_or_running_on_linux?
-
-    base_os = MacOSVersion.from_symbol(os_name)
-    current_os = if Homebrew::SimulateSystem.current_os == :macos
+    current_os_symbol = Homebrew::SimulateSystem.current_os
+    current_os = if current_os_symbol == :macos
       # Assume the oldest macOS version when simulating a generic macOS version
       # Version::NULL is always treated as less than any other version.
       Version::NULL
+    elsif MacOSVersion::SYMBOLS.key?(current_os_symbol)
+      MacOSVersion.from_symbol(current_os_symbol)
     else
-      MacOSVersion.from_symbol(Homebrew::SimulateSystem.current_os)
+      return false
     end
+    base_os = MacOSVersion.from_symbol(os_name)
 
     return current_os >= base_os if or_condition == :or_newer
     return current_os <= base_os if or_condition == :or_older
@@ -194,7 +195,7 @@ module OnSystem
         comparator = OnSystem.comparator_from_or_condition(or_condition)
         @uses_on_system.macos_requirements << MacOSRequirement.new([os_condition], comparator:)
 
-        return unless OnSystem.os_condition_met? os_condition, or_condition
+        return unless OnSystem.os_condition_met?(os_condition, or_condition)
 
         @on_system_block_min_os = T.let(
           if or_condition == :or_older
