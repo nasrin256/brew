@@ -273,19 +273,24 @@ class Pathname
   end
 
   # Writes an exec script in this folder for each target pathname.
-  sig { params(targets: T.any(T::Array[T.any(String, Pathname)], String, Pathname)).void }
-  def write_exec_script(*targets)
+  sig {
+    params(targets: T.any(T::Array[T.any(String, Pathname)], String, Pathname),
+           args:    T.any(String, T::Array[String])).void
+  }
+  def write_exec_script(*targets, args: T.unsafe(nil))
     targets.flatten!
     if targets.empty?
       opoo "Tried to write exec scripts to #{self} for an empty list of targets"
       return
     end
+    arg_str = "#{Array(args).join(" ")} " if args.present?
+
     mkpath
     targets.each do |target|
       target = Pathname.new(target) # allow pathnames or strings
       join(target.basename).write <<~SH
         #!/bin/bash
-        exec "#{target}" "$@"
+        exec "#{target}" #{arg_str}"$@"
       SH
     end
   end
