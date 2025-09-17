@@ -367,6 +367,16 @@ module Cask
     alias == eql?
 
     def to_h
+      # Check if requires_rosetta was used in caveats and adjust fields accordingly
+      caveats_text = caveats
+      detected_requires_rosetta = @dsl.caveats.used_built_in_caveat?(:requires_rosetta)
+      effective_requires_rosetta = requires_rosetta || detected_requires_rosetta
+      
+      # If requires_rosetta was detected in caveats, exclude it from caveats text for serialization
+      if detected_requires_rosetta && !requires_rosetta
+        caveats_text = @dsl.caveats.to_s_excluding(:requires_rosetta)
+      end
+
       {
         "token"                           => token,
         "full_token"                      => full_name,
@@ -388,13 +398,13 @@ module Cask
         "outdated"                        => outdated?,
         "sha256"                          => sha256,
         "artifacts"                       => artifacts_list,
-        "caveats"                         => (Tty.strip_ansi(caveats) unless caveats.empty?),
+        "caveats"                         => (Tty.strip_ansi(caveats_text) unless caveats_text.empty?),
         "depends_on"                      => depends_on,
         "conflicts_with"                  => conflicts_with,
         "container"                       => container&.pairs,
         "rename"                          => rename_list,
         "auto_updates"                    => auto_updates,
-        "requires_rosetta"                => requires_rosetta,
+        "requires_rosetta"                => effective_requires_rosetta,
         "deprecated"                      => deprecated?,
         "deprecation_date"                => deprecation_date,
         "deprecation_reason"              => deprecation_reason,

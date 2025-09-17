@@ -53,6 +53,27 @@ RSpec.describe Cask::DSL::Caveats, :cask do
       result = caveats.to_s
       expect(result).not_to include("requires Rosetta 2 to be installed")
     end
+
+    it "tracks when requires_rosetta caveat is used" do
+      allow(Homebrew::SimulateSystem).to receive(:current_arch).and_return(:arm)
+      caveats.eval_caveats do
+        requires_rosetta
+      end
+      expect(caveats.used_built_in_caveat?(:requires_rosetta)).to be true
+    end
+
+    it "can exclude requires_rosetta from serialized caveats" do
+      allow(Homebrew::SimulateSystem).to receive(:current_arch).and_return(:arm)
+      caveats.eval_caveats do
+        requires_rosetta
+      end
+      
+      full_text = caveats.to_s
+      excluded_text = caveats.to_s_excluding(:requires_rosetta)
+      
+      expect(full_text).to include("requires Rosetta 2 to be installed")
+      expect(excluded_text).not_to include("requires Rosetta 2 to be installed")
+    end
   end
 
   describe "#kext" do
