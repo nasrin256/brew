@@ -1,8 +1,6 @@
 # typed: true # rubocop:todo Sorbet/StrictSigil
 # frozen_string_literal: true
 
-require "set"
-
 module Cask
   class DSL
     # Class corresponding to the `caveats` stanza.
@@ -20,7 +18,7 @@ module Cask
         @built_in_caveats = {}
         @custom_caveats = []
         @discontinued = false
-        @automatic_caveats_added = Set.new
+        @automatic_caveats_added = []
       end
 
       def self.caveat(name, &block)
@@ -28,7 +26,8 @@ module Cask
           key = [name, *args]
           text = instance_exec(*args, &block)
           @built_in_caveats[key] = text if text
-          @automatic_caveats_added.add(name) if text # Track that this caveat was added
+          # Track that this caveat was added
+          @automatic_caveats_added << name if text && @automatic_caveats_added.exclude?(name)
           :built_in_caveat
         end
       end
@@ -63,9 +62,10 @@ module Cask
       def add_automatic_caveats
         # Add requires_rosetta caveat automatically if the field is set
         # and it hasn't been added already
-        if @cask.requires_rosetta && !@automatic_caveats_added.include?(:requires_rosetta)
-          requires_rosetta
-        end
+        return unless @cask.requires_rosetta
+        return if @automatic_caveats_added.include?(:requires_rosetta)
+
+        requires_rosetta
       end
 
       # Check if a specific built-in caveat was used
@@ -79,8 +79,8 @@ module Cask
         excluded_keys = @built_in_caveats.keys.select do |key|
           excluded_caveats.include?(key.first)
         end
-        
-        remaining_caveats = @built_in_caveats.reject { |key, _| excluded_keys.include?(key) }
+
+        remaining_caveats = @built_in_caveats.except(*excluded_keys)
         (@custom_caveats + remaining_caveats.values).join("\n")
       end
 

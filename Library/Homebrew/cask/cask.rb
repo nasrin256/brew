@@ -371,11 +371,9 @@ module Cask
       caveats_text = caveats
       detected_requires_rosetta = @dsl.caveats.used_built_in_caveat?(:requires_rosetta)
       effective_requires_rosetta = requires_rosetta || detected_requires_rosetta
-      
+
       # If requires_rosetta was detected in caveats, exclude it from caveats text for serialization
-      if detected_requires_rosetta && !requires_rosetta
-        caveats_text = @dsl.caveats.to_s_excluding(:requires_rosetta)
-      end
+      caveats_text = @dsl.caveats.to_s_excluding(:requires_rosetta) if detected_requires_rosetta && !requires_rosetta
 
       {
         "token"                           => token,
