@@ -38,20 +38,20 @@ RSpec.describe Tab do
 
   subject(:tab) do
     described_class.new(
-      "homebrew_version"        => HOMEBREW_VERSION,
-      "used_options"            => used_options.as_flags,
-      "unused_options"          => unused_options.as_flags,
-      "built_as_bottle"         => false,
-      "poured_from_bottle"      => true,
-      "installed_as_dependency" => false,
-      "installed_on_request"    => true,
-      "changed_files"           => [],
-      "time"                    => time,
-      "source_modified_time"    => 0,
-      "compiler"                => "clang",
-      "stdlib"                  => "libcxx",
-      "runtime_dependencies"    => [],
-      "source"                  => {
+      homebrew_version:        HOMEBREW_VERSION,
+      used_options:            used_options.as_flags,
+      unused_options:          unused_options.as_flags,
+      built_as_bottle:         false,
+      poured_from_bottle:      true,
+      installed_as_dependency: false,
+      installed_on_request:    true,
+      changed_files:           [],
+      time:                    time,
+      source_modified_time:    0,
+      compiler:                "clang",
+      stdlib:                  "libcxx",
+      runtime_dependencies:    [],
+      source:                  {
         "tap"      => CoreTap.instance.to_s,
         "path"     => CoreTap.instance.path.to_s,
         "spec"     => "stable",
@@ -60,8 +60,8 @@ RSpec.describe Tab do
           "head"   => "HEAD-1111111",
         },
       },
-      "arch"                    => Hardware::CPU.arch,
-      "built_on"                => DevelopmentTools.build_system_info,
+      arch:                    Hardware::CPU.arch.to_s,
+      built_on:                DevelopmentTools.build_system_info,
     )
   end
 
@@ -449,7 +449,7 @@ RSpec.describe Tab do
   end
 
   specify "#to_json" do
-    json_tab = described_class.new(JSON.parse(tab.to_json))
+    json_tab = described_class.new(**JSON.parse(tab.to_json).transform_keys(&:to_sym))
     expect(json_tab.homebrew_version).to eq(tab.homebrew_version)
     expect(json_tab.used_options.sort).to eq(tab.used_options.sort)
     expect(json_tab.unused_options.sort).to eq(tab.unused_options.sort)
@@ -470,7 +470,7 @@ RSpec.describe Tab do
   end
 
   specify "#to_bottle_hash" do
-    json_tab = described_class.new(JSON.parse(tab.to_bottle_hash.to_json))
+    json_tab = described_class.new(**JSON.parse(tab.to_bottle_hash.to_json).transform_keys(&:to_sym))
     expect(json_tab.homebrew_version).to eq(tab.homebrew_version)
     expect(json_tab.changed_files).to eq(tab.changed_files)
     expect(json_tab.source_modified_time).to eq(tab.source_modified_time)

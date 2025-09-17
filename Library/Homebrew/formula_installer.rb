@@ -1574,8 +1574,8 @@ on_request: installed_on_request?, options:)
 
     # fill in missing/outdated parts of the tab
     # keep in sync with Tab#to_bottle_hash
-    tab.used_options = []
-    tab.unused_options = []
+    tab.used_options = Options.new
+    tab.unused_options = Options.new
     tab.built_as_bottle = true
     tab.poured_from_bottle = true
     tab.loaded_from_api = formula.loaded_from_api?

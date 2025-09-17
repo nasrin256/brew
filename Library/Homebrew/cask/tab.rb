@@ -11,12 +11,29 @@ module Cask
     sig { returns(T.nilable(T::Array[T.untyped])) }
     attr_accessor :uninstall_artifacts
 
-    sig { params(attributes: T.any(T::Hash[String, T.untyped], T::Hash[Symbol, T.untyped])).void }
-    def initialize(attributes = {})
-      @uninstall_flight_blocks = T.let(nil, T.nilable(T::Boolean))
-      @uninstall_artifacts = T.let(nil, T.nilable(T::Array[T.untyped]))
+    sig {
+      params(
+        arch:                    T.nilable(String),
+        built_on:                T.nilable(T::Hash[String, T.untyped]),
+        homebrew_version:        T.nilable(String),
+        installed_as_dependency: T.nilable(T::Boolean),
+        installed_on_request:    T.nilable(T::Boolean),
+        loaded_from_api:         T.nilable(T::Boolean),
+        runtime_dependencies:    T.any(NilClass, T::Array[T::Hash[String, T.untyped]], T::Hash[String, T.untyped]),
+        source:                  T.nilable(T::Hash[String, T.untyped]),
+        tabfile:                 T.nilable(Pathname),
+        time:                    T.nilable(Integer),
+        uninstall_artifacts:     T.nilable(T::Array[T.untyped]),
+        uninstall_flight_blocks: T.nilable(T::Boolean),
+      ).void
+    }
+    def initialize(arch: nil, built_on: nil, homebrew_version: nil, installed_as_dependency: nil,
+                   installed_on_request: nil, loaded_from_api: nil, runtime_dependencies: nil, source: nil,
+                   tabfile: nil, time: nil, uninstall_artifacts: nil, uninstall_flight_blocks: nil)
+      @uninstall_flight_blocks = T.let(uninstall_flight_blocks, T.nilable(T::Boolean))
+      @uninstall_artifacts = T.let(uninstall_artifacts, T.nilable(T::Array[T.untyped]))
 
-      super
+      super(homebrew_version:, installed_as_dependency:, installed_on_request:, loaded_from_api:, tabfile:, time:, arch:, source:, built_on:, runtime_dependencies:)
     end
 
     # Instantiates a {Tab} for a new installation of a cask.

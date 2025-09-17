@@ -38,48 +38,54 @@ class AbstractTab
   # @api internal
   attr_accessor :runtime_dependencies
 
-  # TODO: Update attributes to only accept symbol keys (kwargs style).
-  sig { params(attributes: T.any(T::Hash[String, T.untyped], T::Hash[Symbol, T.untyped])).void }
-  def initialize(attributes = {})
-    @installed_as_dependency = T.let(nil, T.nilable(T::Boolean))
-    @installed_on_request = T.let(nil, T.nilable(T::Boolean))
-    @homebrew_version = T.let(nil, T.nilable(String))
-    @tabfile = T.let(nil, T.nilable(Pathname))
-    @loaded_from_api = T.let(nil, T.nilable(T::Boolean))
-    @time = T.let(nil, T.nilable(Integer))
-    @arch = T.let(nil, T.nilable(String))
-    @source = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
-    @built_on = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
-    @runtime_dependencies = T.let(nil, T.nilable(T::Array[T.untyped]))
-
-    attributes.each do |key, value|
-      case key.to_sym
-      when :changed_files
-        @changed_files = value&.map { |f| Pathname(f) }
-      else
-        instance_variable_set(:"@#{key}", value)
-      end
-    end
+  sig {
+    params(
+      arch:                    T.any(NilClass, String, Symbol),
+      built_on:                T.nilable(T::Hash[String, T.untyped]),
+      changed_files:           T.nilable(T::Array[T.untyped]),
+      homebrew_version:        T.nilable(String),
+      installed_as_dependency: T.nilable(T::Boolean),
+      installed_on_request:    T.nilable(T::Boolean),
+      loaded_from_api:         T.nilable(T::Boolean),
+      runtime_dependencies:    T.any(NilClass, T::Array[T::Hash[String, T.untyped]], T::Hash[String, T.untyped]),
+      source:                  T.nilable(T::Hash[String, T.untyped]),
+      tabfile:                 T.nilable(Pathname),
+      time:                    T.nilable(Integer),
+    ).void
+  }
+  def initialize(arch: nil, built_on: nil, changed_files: nil, homebrew_version: nil, installed_as_dependency: nil,
+                 installed_on_request: nil, loaded_from_api: nil, runtime_dependencies: nil, source: nil, tabfile: nil,
+                 time: nil)
+    @installed_as_dependency = T.let(installed_as_dependency, T.nilable(T::Boolean))
+    @installed_on_request = T.let(installed_on_request, T.nilable(T::Boolean))
+    @homebrew_version = T.let(homebrew_version, T.nilable(String))
+    @tabfile = T.let(tabfile, T.nilable(Pathname))
+    @loaded_from_api = T.let(loaded_from_api, T.nilable(T::Boolean))
+    @time = T.let(time, T.nilable(Integer))
+    @arch = T.let(arch.to_s, T.nilable(String))
+    @source = T.let(source, T.nilable(T::Hash[String, T.untyped]))
+    @built_on = T.let(built_on, T.nilable(T::Hash[String, T.untyped]))
+    @runtime_dependencies = T.let(runtime_dependencies,
+                                  T.any(NilClass, T::Array[T::Hash[String, T.untyped]], T::Hash[String, T.untyped]))
+    @changed_files = changed_files&.map { |f| Pathname(f) }
   end
 
   # Instantiates a {Tab} for a new installation of a formula or cask.
   sig { params(formula_or_cask: T.any(Formula, Cask::Cask)).returns(T.attached_class) }
   def self.create(formula_or_cask)
-    attributes = {
-      "homebrew_version"        => HOMEBREW_VERSION,
-      "installed_as_dependency" => false,
-      "installed_on_request"    => false,
-      "loaded_from_api"         => formula_or_cask.loaded_from_api?,
-      "time"                    => Time.now.to_i,
-      "arch"                    => Hardware::CPU.arch,
-      "source"                  => {
+    new(
+      homebrew_version:        HOMEBREW_VERSION,
+      installed_as_dependency: false,
+      installed_on_request:    false,
+      loaded_from_api:         formula_or_cask.loaded_from_api?,
+      time:                    Time.now.to_i,
+      arch:                    Hardware::CPU.arch.to_s,
+      source:                  {
         "tap"          => formula_or_cask.tap&.name,
         "tap_git_head" => formula_or_cask.tap_git_head,
       },
-      "built_on"                => DevelopmentTools.build_system_info,
-    }
-
-    new(attributes)
+      built_on:                DevelopmentTools.build_system_info,
+    )
   end
 
   # Returns the {Tab} for a formula or cask install receipt at `path`.
@@ -99,34 +105,35 @@ class AbstractTab
   sig { params(content: String, path: T.any(Pathname, String)).returns(T.attached_class) }
   def self.from_file_content(content, path)
     attributes = begin
-      JSON.parse(content)
+      JSON.parse(content).transform_keys(&:to_sym)
     rescue JSON::ParserError => e
       raise e, "Cannot parse #{path}: #{e}", e.backtrace
     end
-    attributes["tabfile"] = path
+    attributes[:tabfile] = Pathname(path)
 
-    new(attributes)
+    new(**attributes.slice(:aliases, :arch, :built_as_bottle, :built_on, :changed_files, :compiler, :homebrew_version,
+                           :installed_as_dependency, :installed_on_request, :loaded_from_api, :poured_from_bottle,
+                           :runtime_dependencies, :source_modified_time, :source, :stdlib, :tabfile, :tapped_from,
+                           :time, :uninstall_artifacts, :uninstall_flight_blocks, :unused_options, :used_options))
   end
 
   sig { returns(T.attached_class) }
   def self.empty
-    attributes = {
-      "homebrew_version"        => HOMEBREW_VERSION,
-      "installed_as_dependency" => false,
-      "installed_on_request"    => false,
-      "loaded_from_api"         => false,
-      "time"                    => nil,
-      "runtime_dependencies"    => nil,
-      "arch"                    => nil,
-      "source"                  => {
+    new(
+      homebrew_version:        HOMEBREW_VERSION,
+      installed_as_dependency: false,
+      installed_on_request:    false,
+      loaded_from_api:         false,
+      time:                    nil,
+      runtime_dependencies:    nil,
+      arch:                    nil,
+      source:                  {
         "path"         => nil,
         "tap"          => nil,
         "tap_git_head" => nil,
       },
-      "built_on"                => DevelopmentTools.build_system_info,
-    }
-
-    new(attributes)
+      built_on:                DevelopmentTools.build_system_info,
+    )
   end
 
   def self.formula_to_dep_hash(formula, declared_deps)
@@ -174,27 +181,59 @@ class Tab < AbstractTab
   # @api internal
   attr_accessor :poured_from_bottle
 
+  # The options used to install the formula.
+  #
+  # @api internal
+  sig { returns(Options) }
+  attr_accessor :used_options, :unused_options
+
   attr_accessor :built_as_bottle, :stdlib, :aliases
-  attr_writer :used_options, :unused_options, :compiler, :source_modified_time
+  attr_writer :compiler, :source_modified_time
   attr_reader :tapped_from
 
   sig { returns(T.nilable(T::Array[Pathname])) }
   attr_accessor :changed_files
 
-  sig { params(attributes: T.any(T::Hash[String, T.untyped], T::Hash[Symbol, T.untyped])).void }
-  def initialize(attributes = {})
-    @poured_from_bottle = T.let(nil, T.nilable(T::Boolean))
-    @built_as_bottle = T.let(nil, T.nilable(T::Boolean))
-    @changed_files = nil
-    @stdlib = T.let(nil, T.nilable(String))
-    @aliases = T.let(nil, T.nilable(T::Array[String]))
-    @used_options = T.let(nil, T.nilable(T::Array[String]))
-    @unused_options = T.let(nil, T.nilable(T::Array[String]))
-    @compiler = T.let(nil, T.nilable(String))
-    @source_modified_time = T.let(nil, T.nilable(Integer))
-    @tapped_from = T.let(nil, T.nilable(String))
+  sig {
+    params(
+      aliases:                 T.nilable(T::Array[String]),
+      arch:                    T.nilable(String),
+      built_as_bottle:         T::Boolean,
+      built_on:                T.nilable(T::Hash[String, T.untyped]),
+      changed_files:           T.nilable(T::Array[String]),
+      compiler:                T.nilable(String),
+      homebrew_version:        T.nilable(String),
+      installed_as_dependency: T.nilable(T::Boolean),
+      installed_on_request:    T.nilable(T::Boolean),
+      loaded_from_api:         T.nilable(T::Boolean),
+      poured_from_bottle:      T.nilable(T::Boolean),
+      runtime_dependencies:    T.any(NilClass, T::Array[T::Hash[String, T.untyped]], T::Hash[String, T.untyped]),
+      source_modified_time:    T.nilable(Integer),
+      source:                  T.nilable(T::Hash[String, T.untyped]),
+      stdlib:                  T.nilable(String),
+      tabfile:                 T.nilable(Pathname),
+      tapped_from:             T.nilable(String),
+      time:                    T.nilable(Integer),
+      unused_options:          T.nilable(T::Array[String]),
+      used_options:            T.nilable(T::Array[String]),
+    ).void
+  }
+  def initialize(aliases: nil, arch: nil, built_as_bottle: false, built_on: nil, changed_files: nil, compiler: nil,
+                 homebrew_version: nil, installed_as_dependency: nil, installed_on_request: nil, loaded_from_api: nil,
+                 poured_from_bottle: nil, runtime_dependencies: nil, source_modified_time: nil, source: nil,
+                 stdlib: nil, tabfile: nil, tapped_from: nil, time: nil, unused_options: nil, used_options: nil)
+    @poured_from_bottle = T.let(poured_from_bottle, T.nilable(T::Boolean))
+    @built_as_bottle = T.let(built_as_bottle, T::Boolean)
+    @changed_files = T.let(changed_files&.map { |f| Pathname(f) }, T.nilable(T::Array[Pathname]))
+    @stdlib = T.let(stdlib, T.nilable(String))
+    @aliases = T.let(aliases, T.nilable(T::Array[String]))
+    @used_options = T.let(Options.create(used_options), Options)
+    @unused_options = T.let(Options.create(unused_options), Options)
+    @compiler = T.let(compiler, T.nilable(String))
+    @source_modified_time = T.let(source_modified_time, T.nilable(Integer))
+    @tapped_from = T.let(tapped_from, T.nilable(String))
 
-    super
+    super(homebrew_version:, tabfile:, installed_as_dependency:, installed_on_request:, loaded_from_api:, time:, arch:, source:, built_on:, runtime_dependencies:, changed_files:)
   end
 
   # Instantiates a {Tab} for a new installation of a formula.
@@ -209,13 +248,13 @@ class Tab < AbstractTab
     build = formula.build
     runtime_deps = formula.runtime_dependencies(undeclared: false)
 
-    tab.used_options = build.used_options.as_flags
-    tab.unused_options = build.unused_options.as_flags
+    tab.used_options = Options.create(build.used_options.as_flags)
+    tab.unused_options = Options.create(build.unused_options.as_flags)
     tab.tabfile = formula.prefix/FILENAME
     tab.built_as_bottle = build.bottle?
     tab.poured_from_bottle = false
     tab.source_modified_time = formula.source_modified_time.to_i
-    tab.compiler = compiler
+    tab.compiler = compiler.to_s
     tab.stdlib = stdlib
     tab.aliases = formula.aliases
     tab.runtime_dependencies = Tab.runtime_deps_hash(formula, runtime_deps)
@@ -292,7 +331,7 @@ class Tab < AbstractTab
       options -= [option]
       options << Option.new(deprecated_option.current, option.description)
     end
-    options
+    Options.create(options.as_flags)
   end
 
   # Returns a {Tab} for an already installed formula,
@@ -316,11 +355,11 @@ class Tab < AbstractTab
     if path
       tab = from_file(path)
       used_options = remap_deprecated_options(formula.deprecated_options, tab.used_options)
-      tab.used_options = used_options.as_flags
+      tab.used_options = Options.create(used_options.as_flags)
     else
       # Formula is not installed. Return a fake tab.
       tab = empty
-      tab.unused_options = formula.options.as_flags
+      tab.unused_options = Options.create(formula.options.as_flags)
       tab.source = {
         "path"         => formula.specified_path.to_s,
         "tap"          => formula.tap&.name,
@@ -341,13 +380,13 @@ class Tab < AbstractTab
   def self.empty
     tab = super
 
-    tab.used_options = []
-    tab.unused_options = []
+    tab.used_options = Options.new
+    tab.unused_options = Options.new
     tab.built_as_bottle = false
     tab.poured_from_bottle = false
     tab.source_modified_time = 0
     tab.stdlib = nil
-    tab.compiler = DevelopmentTools.default_compiler
+    tab.compiler = DevelopmentTools.default_compiler.to_s
     tab.aliases = []
     tab.source["spec"] = "stable"
     tab.source["versions"] = empty_source_versions
@@ -401,19 +440,6 @@ class Tab < AbstractTab
   sig { returns(T::Boolean) }
   def stable?
     spec == :stable
-  end
-
-  # The options used to install the formula.
-  #
-  # @api internal
-  sig { returns(Options) }
-  def used_options
-    Options.create(@used_options)
-  end
-
-  sig { returns(Options) }
-  def unused_options
-    Options.create(@unused_options)
   end
 
   sig { returns(T.any(String, Symbol)) }

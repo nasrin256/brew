@@ -29,24 +29,24 @@ RSpec.describe Cask::Tab, :cask do
 
   subject(:tab) do
     described_class.new(
-      "homebrew_version"        => HOMEBREW_VERSION,
-      "loaded_from_api"         => false,
-      "uninstall_flight_blocks" => true,
-      "installed_as_dependency" => false,
-      "installed_on_request"    => true,
-      "time"                    => time,
-      "runtime_dependencies"    => {
+      homebrew_version:        HOMEBREW_VERSION,
+      loaded_from_api:         false,
+      uninstall_flight_blocks: true,
+      installed_as_dependency: false,
+      installed_on_request:    true,
+      time:                    time,
+      runtime_dependencies:    {
         "cask" => [{ "full_name" => "bar", "version" => "2.0", "declared_directly" => false }],
       },
-      "source"                  => {
+      source:                  {
         "path"         => CoreCaskTap.instance.path.to_s,
         "tap"          => CoreCaskTap.instance.to_s,
         "tap_git_head" => "8b79aa759500f0ffdf65a23e12950cbe3bf8fe17",
         "version"      => "1.2.3",
       },
-      "arch"                    => Hardware::CPU.arch,
-      "uninstall_artifacts"     => [{ "app" => ["Foo.app"] }],
-      "built_on"                => DevelopmentTools.build_system_info,
+      arch:                    Hardware::CPU.arch.to_s,
+      uninstall_artifacts:     [{ "app" => ["Foo.app"] }],
+      built_on:                DevelopmentTools.build_system_info,
     )
   end
 
@@ -299,7 +299,7 @@ RSpec.describe Cask::Tab, :cask do
   end
 
   specify "#to_json" do
-    json_tab = described_class.new(JSON.parse(tab.to_json))
+    json_tab = described_class.new(**JSON.parse(tab.to_json).transform_keys(&:to_sym))
     expect(json_tab.homebrew_version).to eq(tab.homebrew_version)
     expect(json_tab.loaded_from_api).to eq(tab.loaded_from_api)
     expect(json_tab.uninstall_flight_blocks).to eq(tab.uninstall_flight_blocks)
