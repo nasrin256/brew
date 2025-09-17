@@ -384,6 +384,7 @@ module Cask
           end
 
           auto_updates json_cask[:auto_updates] unless json_cask[:auto_updates].nil?
+          requires_rosetta json_cask[:requires_rosetta] unless json_cask[:requires_rosetta].nil?
           conflicts_with(**json_cask[:conflicts_with]) if json_cask[:conflicts_with].present?
 
           if json_cask[:rename].present?

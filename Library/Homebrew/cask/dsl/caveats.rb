@@ -36,6 +36,7 @@ module Cask
 
       sig { returns(String) }
       def to_s
+        add_automatic_caveats
         (@custom_caveats + @built_in_caveats.values).join("\n")
       end
 
@@ -51,6 +52,13 @@ module Cask
         return if result == :built_in_caveat
 
         @custom_caveats << result.to_s.sub(/\s*\Z/, "\n")
+      end
+
+      private
+
+      def add_automatic_caveats
+        # Add requires_rosetta caveat automatically if the field is set
+        requires_rosetta if @cask.requires_rosetta
       end
 
       caveat :kext do
@@ -138,6 +146,7 @@ module Cask
       end
 
       caveat :requires_rosetta do
+        next unless @cask.requires_rosetta
         next if Homebrew::SimulateSystem.current_arch != :arm
 
         <<~EOS

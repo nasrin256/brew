@@ -86,6 +86,7 @@ module Cask
       :name,
       :os,
       :rename,
+      :requires_rosetta,
       :sha256,
       :staged_path,
       :url,
@@ -168,6 +169,8 @@ module Cask
       @os = T.let(nil, T.nilable(String))
       @os_set_in_block = T.let(false, T::Boolean)
       @rename = T.let([], T::Array[DSL::Rename])
+      @requires_rosetta = T.let(nil, T.nilable(T::Boolean))
+      @requires_rosetta_set_in_block = T.let(false, T::Boolean)
       @sha256 = T.let(nil, T.nilable(T.any(Checksum, Symbol)))
       @sha256_set_in_block = T.let(false, T::Boolean)
       @staged_path = T.let(nil, T.nilable(Pathname))
@@ -557,6 +560,13 @@ module Cask
     # @api public
     def auto_updates(auto_updates = nil)
       set_unique_stanza(:auto_updates, auto_updates.nil?) { auto_updates }
+    end
+
+    # Asserts that the cask requires Rosetta 2 to run on Apple Silicon Macs.
+    #
+    # @api public
+    def requires_rosetta(requires_rosetta = nil)
+      set_unique_stanza(:requires_rosetta, requires_rosetta.nil?) { requires_rosetta }
     end
 
     # Automatically fetch the latest version of a cask from changelogs.

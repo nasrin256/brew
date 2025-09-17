@@ -394,6 +394,7 @@ module Cask
         "container"                       => container&.pairs,
         "rename"                          => rename_list,
         "auto_updates"                    => auto_updates,
+        "requires_rosetta"                => requires_rosetta,
         "deprecated"                      => deprecated?,
         "deprecation_date"                => deprecation_date,
         "deprecation_reason"              => deprecation_reason,
