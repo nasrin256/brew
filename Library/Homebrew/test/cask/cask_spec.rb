@@ -328,6 +328,66 @@ RSpec.describe Cask::Cask, :cask do
         expect(JSON.pretty_generate(hash)).to eq(expected_json)
       end
     end
+
+    context "with requires_rosetta field" do
+      let(:cask) { Cask::CaskLoader.load("basic-cask") }
+
+      it "includes requires_rosetta field when set to true" do
+        cask.instance_variable_get(:@dsl).requires_rosetta(true)
+        hash = cask.to_h
+        expect(hash["requires_rosetta"]).to be true
+      end
+
+      it "includes requires_rosetta field when set to false" do
+        cask.instance_variable_get(:@dsl).requires_rosetta(false)
+        hash = cask.to_h
+        expect(hash["requires_rosetta"]).to be false
+      end
+
+      it "has nil requires_rosetta field when not set" do
+        hash = cask.to_h
+        expect(hash["requires_rosetta"]).to be_nil
+      end
+    end
+
+    context "with legacy requires_rosetta caveat usage" do
+      let(:cask) { Cask::CaskLoader.load("basic-cask") }
+
+      before do
+        allow(Homebrew::SimulateSystem).to receive(:current_arch).and_return(:arm)
+      end
+
+      it "detects requires_rosetta usage in caveats and sets field to true" do
+        # Simulate legacy usage by calling requires_rosetta in caveats
+        cask.instance_variable_get(:@dsl).caveats.eval_caveats { requires_rosetta }
+        
+        hash = cask.to_h
+        expect(hash["requires_rosetta"]).to be true
+      end
+
+      it "excludes requires_rosetta caveat text when detected in legacy usage" do
+        # Simulate legacy usage
+        cask.instance_variable_get(:@dsl).caveats.eval_caveats { requires_rosetta }
+        
+        hash = cask.to_h
+        caveats_text = hash["caveats"]
+        expect(caveats_text).to be_nil # Should be excluded from serialization
+      end
+
+      it "does not duplicate requires_rosetta when both field and caveat are present" do
+        # Set field to true
+        cask.instance_variable_get(:@dsl).requires_rosetta(true)
+        # Also call in caveats (should not duplicate)
+        cask.instance_variable_get(:@dsl).caveats.eval_caveats { requires_rosetta }
+        
+        hash = cask.to_h
+        expect(hash["requires_rosetta"]).to be true
+        
+        # Should not have duplicate caveats text when field is already set
+        caveats_text = hash["caveats"]
+        expect(caveats_text).to be_nil
+      end
+    end
   end
 
   describe "#to_hash_with_variations" do
