@@ -57,6 +57,25 @@ module Cask
         @custom_caveats << result.to_s.sub(/\s*\Z/, "\n")
       end
 
+      # Handle requires_rosetta caveat - can be called directly instead of using define_method
+      # This method can be called both inside and outside caveats blocks
+      def requires_rosetta
+        return unless @cask.requires_rosetta
+        return if Homebrew::SimulateSystem.current_arch != :arm
+
+        text = <<~EOS
+          #{@cask} is built for Intel macOS and so requires Rosetta 2 to be installed.
+          You can install Rosetta 2 with:
+            softwareupdate --install-rosetta --agree-to-license
+          Note that it is very difficult to remove Rosetta 2 once it is installed.
+        EOS
+
+        key = [:requires_rosetta]
+        @built_in_caveats[key] = text
+        @built_in_caveats_used << :requires_rosetta unless @built_in_caveats_used.include?(:requires_rosetta)
+        :built_in_caveat
+      end
+
       private
 
       def add_automatic_caveats
@@ -99,24 +118,6 @@ module Cask
 
         remaining_caveats = @built_in_caveats.except(*excluded_keys)
         (@custom_caveats + remaining_caveats.values).join("\n")
-      end
-
-      # Handle requires_rosetta caveat - can be called directly instead of using define_method
-      def requires_rosetta
-        return unless @cask.requires_rosetta
-        return if Homebrew::SimulateSystem.current_arch != :arm
-
-        text = <<~EOS
-          #{@cask} is built for Intel macOS and so requires Rosetta 2 to be installed.
-          You can install Rosetta 2 with:
-            softwareupdate --install-rosetta --agree-to-license
-          Note that it is very difficult to remove Rosetta 2 once it is installed.
-        EOS
-
-        key = [:requires_rosetta]
-        @built_in_caveats[key] = text
-        @built_in_caveats_used << :requires_rosetta unless @built_in_caveats_used.include?(:requires_rosetta)
-        :built_in_caveat
       end
 
       caveat :kext do
