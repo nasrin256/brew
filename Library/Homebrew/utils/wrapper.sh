@@ -49,7 +49,10 @@ check-brew-wrapper() {
   then
     local HOMEBREW_BREW_CALLER HOMEBREW_BREW_CALLER_CHECK_EXIT_CODE
 
-    if [[ -n "${HOMEBREW_MACOS:-}" ]]
+    if [[ -n "${HOMEBREW_BREW_WRAPPER_PID_PATH_SUBCOMMAND:-}" ]]
+    then
+      HOMEBREW_BREW_CALLER="$("${HOMEBREW_FORCE_BREW_WRAPPER}" "${HOMEBREW_BREW_WRAPPER_PID_PATH_SUBCOMMAND}" "${PPID}")"
+    elif [[ -n "${HOMEBREW_MACOS:-}" ]]
     then
       source "${HOMEBREW_LIBRARY}/Homebrew/utils/ruby.sh"
       setup-ruby-path
