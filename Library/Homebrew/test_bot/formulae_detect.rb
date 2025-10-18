@@ -213,7 +213,7 @@ module Homebrew
         raise if e.tap.installed?
 
         test "brew", "tap", e.tap.name
-        retry unless steps.last.failed?
+        retry unless T.must(steps.last).failed?
         onoe e
         puts e.backtrace if args.debug?
       rescue FormulaUnavailableError, TapFormulaAmbiguityError => e
