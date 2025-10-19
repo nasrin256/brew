@@ -360,6 +360,8 @@ module PyPI
       exclude_packages += [Package.new(main_package_name)]
     end
 
+    exclude_packages.delete_if { |package| extra_packages.include?(package) }
+
     new_resource_blocks = ""
     package_errors = ""
     found_packages.sort.each do |package|
